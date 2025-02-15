@@ -7,6 +7,8 @@ from mlx_lm.sample_utils import make_sampler
 from huggingface_hub.utils import disable_progress_bars, enable_progress_bars
 from pydantic import Field, field_validator
 from typing import Optional
+import os
+from pathlib import Path  # local import to avoid adding to global namespace
 
 disable_progress_bars()
 
@@ -63,6 +65,26 @@ def register_commands(cli):
         models_file = _ensure_models_file()
         models = json.loads(models_file.read_text())
         click.echo(json.dumps(models, indent=2))
+
+    @mlx.command()
+    def import_models():
+        cache_dir = Path(os.environ.get("HF_HOME", os.path.expanduser("~/.cache/huggingface")))
+        found_models = set()
+        for root, dirs, files in os.walk(cache_dir):
+            for d in dirs:
+                if "mlx-community" in d:
+                    parts = d.split("--")
+                    model_name = "/".join(parts[1:])
+                    found_models.add(model_name)
+        models_file = _ensure_models_file()
+        models = json.loads(models_file.read_text())
+        new_count = 0
+        for m in found_models:
+            if m not in models:
+                models[m] = {"aliases": []}
+                new_count += 1
+        models_file.write_text(json.dumps(models, indent=2))
+        click.echo(f"Imported {new_count} models from Hugging Face cache")
 
 
 @llm.hookimpl
