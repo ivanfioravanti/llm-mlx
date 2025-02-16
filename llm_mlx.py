@@ -70,7 +70,7 @@ def register_commands(cli):
     def import_models():
         cache_dir = Path(os.environ.get("HF_HOME", os.path.expanduser("~/.cache/huggingface")))
         found_models = set()
-        for root, dirs, files in os.walk(cache_dir):
+        for dirs in os.walk(cache_dir):
             for d in dirs:
                 if "mlx-community" in d:
                     parts = d.split("--")
